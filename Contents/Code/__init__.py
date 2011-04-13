@@ -89,10 +89,24 @@ def GenreMenu(sender, id):
 	return dir
 
 def ShowMenu(sender, id):
+	dir = MediaContainer(title2=sender.itemTitle)
+	f = urllib.urlopen('http://www.joost.com/b/videos/container?count=50&id=%s&start=0' % id)
+	r = f.read()
+	f.close()
+	for item in JSON.ObjectFromString(r)['items']:
+		summary = item['description']
+		thumb = item['images']['thumbnail']
+		title = item['title']
+		id = item['id']
+		dir.Append(Function(VideoItem(Play, title=title, thumb=thumb, summary=summary), id=id))
+	return dir
+	
+def Play(sender, id):
 	pass
-
+	
 def Search(sender, query):
 	pass
+
 def HandleVideosRequest(pathNouns, count):
 	try:
 		title2 = pathNouns[count-1].split("||")[1]
