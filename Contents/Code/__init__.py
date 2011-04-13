@@ -1,7 +1,7 @@
 import urllib
 
 JOOST_PLUGIN_PREFIX = "/video/joost"
-JOOST_SEARCH_URL = "http://search-dca.joost.com/search/select/?spellcheck=true&json_function=searchPage.handleResponse&q=%s&rows=100"
+JOOST_SEARCH_URL = "http://www.joost.com/b/search/video?count=8&start=0&q=%s"
 
 ####################################################################################################
 
@@ -97,15 +97,20 @@ def ShowMenu(sender, id):
 		summary = item['description']
 		thumb = item['images']['thumbnail']
 		title = item['title']
-		id = item['id']
-		dir.Append(Function(VideoItem(Play, title=title, thumb=thumb, summary=summary), id=id))
+		id = 'http://www.joost.com/' + item['id'] + '/'
+		dir.Append(WebVideoItem(id, title=title, thumb=thumb, summary=summary))
 	return dir
-	
-def Play(sender, id):
-	pass
-	
+
 def Search(sender, query):
-	pass
+	dir = MediaContainer(title2=sender.itemTitle)
+	page = HTTP.Request(JOOST_SEARCH_URL % query).content
+	#page = page.lstrip("searchPage.handleResponse(")[:-1].replace(":new",":").replace("Date(",'"').replace("000)",'000"')
+	d = JSON.ObjectFromString(page)
+	for item in d["items"]:
+		dir.Append(WebVideoItem("http://www.joost.com/" + item["id"], title=item["title"], summary=item["description"], duration=int(item["duration"]), thumb=item['images']['thumbnail']))
+	if len(dir) == 0:
+		return MessageContainer('No Results', 'No results.')
+	return dir
 
 def HandleVideosRequest(pathNouns, count):
 	try:
@@ -145,14 +150,6 @@ def HandleVideosRequest(pathNouns, count):
 			query = pathNouns[1]
 			if count > 2:
 				for i in range(2, len(pathNouns)): query += "/%s" % pathNouns[i]
-			callback = HTTP.Get(JOOST_SEARCH_URL % query)
-			if callback is None: return None
-			callback = callback.lstrip("searchPage.handleResponse(")[:-1].replace(":new",":").replace("Date(",'"').replace("000)",'000"')
-			d = JSON.DictFromString(callback)
-			for item in d["response"]["docs"]:
-				thumb = item["thumbnail"]
-				dir.Append(WebVideoItem("http://www.joost.com/"+item["publicId"], item["title"], item["description"], str(item["duration"]), thumb))
-			if dir.ChildCount() == 0:
-				dir.Append(DirectoryItem("%s/search" % JOOST_PLUGIN_PREFIX, "(No Results)", ""))
+			
 	
 	return dir
