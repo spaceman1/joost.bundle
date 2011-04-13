@@ -74,9 +74,20 @@ def ShowsMenu(sender, id):
 		dir.Append(Function(DirectoryItem(GenreMenu, title=item['name']), id=item['id'])) 
 	return dir
 
-def GenreMenu(sender, items):
+def GenreMenu(sender, id):
+	dir = MediaContainer(title2=sender.itemTitle)
+	for item in JSON.ObjectFromURL('http://www.joost.com/b/containers/genre?count=20&id=%s&sort=popularity&start=0' % id.replace('/', '%2F'))['items']:
+		summary = item['description']
+		id = item['id']
+		thumb = item['images']['logo']
+		title = item['title']
+		dir.Append(Function(DirectoryItem(ShowMenu, title=title, thumb=thumb, summary=summary), id=id))
+
+def ShowMenu(sender, id):
 	pass
 
+def Search(sender, query):
+	pass
 def HandleVideosRequest(pathNouns, count):
 	try:
 		title2 = pathNouns[count-1].split("||")[1]
