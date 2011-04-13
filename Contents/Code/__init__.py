@@ -1,3 +1,5 @@
+import urllib
+
 JOOST_PLUGIN_PREFIX = "/video/joost"
 JOOST_SEARCH_URL = "http://search-dca.joost.com/search/select/?spellcheck=true&json_function=searchPage.handleResponse&q=%s&rows=100"
 
@@ -70,18 +72,21 @@ def ShowsMenu(sender, id):
 	feeds = JSON.ObjectFromString(HTTP.Request('http://www.joost.com/#/shows?type=featured').content.split('_joostCache =')[1].split(';\n')[0])
 	section = filter(lambda x: x['id'] == id, feeds['genres'])[0]
 	for item in section['children']:
-		Log(item)
 		dir.Append(Function(DirectoryItem(GenreMenu, title=item['name']), id=item['id'])) 
 	return dir
 
 def GenreMenu(sender, id):
 	dir = MediaContainer(title2=sender.itemTitle)
-	for item in JSON.ObjectFromURL('http://www.joost.com/b/containers/genre?count=20&id=%s&sort=popularity&start=0' % id.replace('/', '%2F'))['items']:
+	f = urllib.urlopen('http://www.joost.com/b/containers/genre?count=20&id=%s&sort=popularity&start=0' % id.replace('/', '%2F'))
+	r = f.read()
+	f.close()
+	for item in JSON.ObjectFromString(r)['items']:
 		summary = item['description']
 		id = item['id']
 		thumb = item['images']['logo']
 		title = item['title']
 		dir.Append(Function(DirectoryItem(ShowMenu, title=title, thumb=thumb, summary=summary), id=id))
+	return dir
 
 def ShowMenu(sender, id):
 	pass
