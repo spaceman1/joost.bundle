@@ -15,49 +15,6 @@ def Start():
 	MediaContainer.viewGroup = 'Details'
 ####################################################################################################
 
-def populateFromFeed(url, feedtype, type='', dir=""):
-	if feedtype == "directory":
-		url = url.replace("?fmt=atom","more/o/text/?fmt=atom")
-		feed = RSS.Parse(url)
-		for entry in feed["entries"]:
-			id = String.Quote(entry.id[0:entry.id.find("/t/")] + "?fmt=atom")
-			title = entry.title
-			thumb = HTML.ElementFromString(entry.content[0].value).xpath("//img")[0].get("src")
-			dir.Append(DirectoryItem(id + "||" + title, title, thumb))
-	elif feedtype == "videoitem":
-		if type == "film" or type == "music":
-			url = url.replace("?fmt=atom", "more/o/text/?fmt=atom")
-		feed = RSS.Parse(url)
-		samePrefix = False
-		for entry in feed["entries"]: #quick loop to see if all the titles have the same prefix or not
-			if not samePrefix:
-				prefix = entry.title[:entry.title.find(":")+1]
-				samePrefix = True
-			else:
-				if not prefix == entry.title[:entry.title.find(":")+1]:
-					samePrefix = False
-					break
-		for entry in feed["entries"]:
-			if type == "shows":
-				id = entry.id
-			if type == "film" or type == "music":
-				id = entry.id.replace("http://www.joost.com/","http://www.joost.com/home?playNow=")
-				id = id[0:id.find("/t/")]
-				
-			if samePrefix:
-				title = entry.title.replace(prefix,"")
-			else: title = entry.title
-			desc = HTML.ElementFromString(entry.content[0].value).text_content().strip()
-			#Log.Add(str(desc))
-			duration = ""
-			try:
-				thumb = HTML.ElementFromString(entry.content[0].value).xpath("//img")[0].get("src")
-			except:
-				thumb = ""
-			Log.Add(id)
-			dir.Append(WebVideoItem(id, title, desc, duration, thumb))
-	return dir
-
 def MainMenu():
 	dir = MediaContainer(viewGroup='_List', title1="Joost")  
 
@@ -110,46 +67,4 @@ def Search(sender, query):
 		dir.Append(WebVideoItem("http://www.joost.com/" + item["id"], title=item["title"], summary=item["description"], duration=int(item["duration"]), thumb=item['images']['thumbnail']))
 	if len(dir) == 0:
 		return MessageContainer('No Results', 'No results.')
-	return dir
-
-def HandleVideosRequest(pathNouns, count):
-	try:
-		title2 = pathNouns[count-1].split("||")[1]
-		pathNouns[count-1] = pathNouns[count-1].split("||")[0]
-	except:
-		title2 = ""
-	
-	if count == 0: vg="List"
-	else: vg="InfoList"
-	
-	if False: pass
-	elif pathNouns[0].startswith("shows"):
-		if count == 1:
-			pass	
-		if count == 2:
-			dir = populateFromFeed(String.Unquote(pathNouns[1]), feedtype="directory", dir=dir)
-		if count == 3:
-			dir = populateFromFeed(String.Unquote(pathNouns[2]).replace("joost.com/","joost.com/api/metadata/get/"), feedtype="videoitem",pathNouns=pathNouns[0], dir=dir) 
-
-	elif pathNouns[0].startswith("film") or pathNouns[0].startswith("music"):
-		if count == 1:
-			x=0
-			for feedlink in HTML.ElementFromURL("http://www.joost.com/feeds/").xpath("//p/a[contains(@href,'epg/" + pathNouns[0] + "/')]"):
-				title = feedlink.text
-				if x == 0: 
-					title = "All " + title
-				else:
-					title = title.replace("Film: ","").replace("Music: ","")
-				dir.Append(DirectoryItem(String.Quote(feedlink.get("href")) + "||" + title, title, ""))
-				x+=1
-		if count == 2:
-			dir = populateFromFeed(String.Unquote(pathNouns[1]),feedtype="videoitem", pathNouns=pathNouns[0], dir=dir)
-
-	elif pathNouns[0].startswith("search"):
-		if count > 1:
-			query = pathNouns[1]
-			if count > 2:
-				for i in range(2, len(pathNouns)): query += "/%s" % pathNouns[i]
-			
-	
 	return dir
