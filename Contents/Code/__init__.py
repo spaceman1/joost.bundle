@@ -49,15 +49,11 @@ def GenreMenu(sender, id):
 
 def ShowMenu(sender, id):
 	dir = MediaContainer(title2=sender.itemTitle)
-	f = urllib.urlopen('http://www.joost.com/b/videos/container?count=50&id=%s&start=0' % id)
-	r = f.read()
-	f.close()
-	for item in JSON.ObjectFromString(r)['items']:
+	for item in JSON.ObjectFromURL('http://www.joost.com/b/videos/container?count=50&id=%s&start=0' % id)['items']:
 		summary = item['description']
 		thumb = item['images']['thumbnail']
 		title = item['title']
-		id = 'http://www.joost.com/' + item['id'] + '/'
-		dir.Append(WebVideoItem(id, title=title, thumb=thumb, summary=summary))
+		dir.Append(Function(VideoItem(Play, title=title, thumb=thumb, summary=summary), id=item['id']))
 	return dir
 
 def Search(sender, query):
@@ -66,7 +62,12 @@ def Search(sender, query):
 	#page = page.lstrip("searchPage.handleResponse(")[:-1].replace(":new",":").replace("Date(",'"').replace("000)",'000"')
 	d = JSON.ObjectFromString(page)
 	for item in d["items"]:
-		dir.Append(WebVideoItem("http://www.joost.com/" + item["id"], title=item["title"], summary=item["description"], duration=int(item["duration"]), thumb=item['images']['thumbnail']))
+		dir.Append(Function(VideoItem(Play, title=item["title"], summary=item["description"], duration=int(item["duration"]), thumb=item['images']['thumbnail']), id=item["id"]))
 	if len(dir) == 0:
 		return MessageContainer('No Results', 'No results.')
 	return dir
+
+def Play(sender, id):
+	stream = XML.ElementFromURL('http://www.joost.com/player/api/1/metadata/embedded/' + id).xpath('//stream[@profile="STANDARD"]')[0].get('file')
+	# Work your magic here
+	return Redirect('...')
