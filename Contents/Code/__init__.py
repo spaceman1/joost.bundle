@@ -24,20 +24,22 @@ def MainMenu():
 	dir.Append(Function(InputDirectoryItem(Search, prompt=L("Search Joost"), title=L("Search Joost"), thumb=R("search.png"))))
 	return dir
 
+def getGenre(id):
+	r = HTTP.Request('http://www.joost.com/b/containers/genre?count=20&id=%s&sort=popularity&start=0' % id.replace('/', '%2F')).content
+	return JSON.ObjectFromString(r)['items']	
+
 def ShowsMenu(sender, id):
 	dir = MediaContainer(title2=sender.itemTitle)
 	feeds = JSON.ObjectFromString(HTTP.Request('http://www.joost.com/#/shows?type=featured').content.split('_joostCache =')[1].split(';\n')[0])
 	section = filter(lambda x: x['id'] == id, feeds['genres'])[0]
 	for item in section['children']:
-		dir.Append(Function(DirectoryItem(GenreMenu, title=item['name']), id=item['id'])) 
+		if len(getGenre(item['id'])):
+			dir.Append(Function(DirectoryItem(GenreMenu, title=item['name']), id=item['id'])) 
 	return dir
 
 def GenreMenu(sender, id):
 	dir = MediaContainer(title2=sender.itemTitle)
-	f = urllib.urlopen('http://www.joost.com/b/containers/genre?count=20&id=%s&sort=popularity&start=0' % id.replace('/', '%2F'))
-	r = f.read()
-	f.close()
-	for item in JSON.ObjectFromString(r)['items']:
+	for item in getGenre(id):
 		summary = item['description']
 		id = item['id']
 		thumb = item['images']['logo']
